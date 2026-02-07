@@ -20,52 +20,88 @@ if (contactForm) {
     contactForm.addEventListener('submit', function(e) {
         e.preventDefault();
         
+        const submitButton = contactForm.querySelector('.btn-submit');
+        const originalButtonText = submitButton.textContent;
+        
+        // Add submitting class to form
+        contactForm.classList.add('submitting');
+        
+        // Disable button and show loading state
+        submitButton.disabled = true;
+        submitButton.textContent = '⏳ Отправка...';
+        
         // Get form data
-        const formData = {
-            name: document.getElementById('name').value,
-            email: document.getElementById('email').value,
-            language: document.getElementById('language').value,
-            level: document.getElementById('level').value,
-            message: document.getElementById('message').value,
-            trial: document.getElementById('trial').checked
-        };
+        const formData = new FormData(contactForm);
+        const userName = formData.get('name');
+        const userEmail = formData.get('email');
         
-        // In a real application, you would send this to a server
-        // For now, we'll just show a success message
-        console.log('Form submitted:', formData);
-        
-        // Create success message
-        const successMessage = document.createElement('div');
-        successMessage.className = 'success-message show';
-        successMessage.innerHTML = `
-            <strong>✓ Message sent!</strong> Thank you for your interest, ${formData.name}. I'll get back to you within 24 hours.
-        `;
-        
-        // Insert success message before the form
-        contactForm.parentNode.insertBefore(successMessage, contactForm);
-        
-        // Reset form
-        contactForm.reset();
-        
-        // Remove success message after 5 seconds
-        setTimeout(() => {
-            successMessage.classList.remove('show');
-            setTimeout(() => {
-                successMessage.remove();
-            }, 300);
-        }, 5000);
-        
-        // Here you would typically send the data to your email or backend service
-        // Example using a service like Formspree or EmailJS:
-        /*
-        fetch('YOUR_FORM_ENDPOINT', {
+        // Send to Formspree
+        fetch('https://formspree.io/f/xbdajkqz', {
             method: 'POST',
+            body: formData,
             headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(formData)
+                'Accept': 'application/json'
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                // Create success message
+                const successMessage = document.createElement('div');
+                successMessage.className = 'success-message show';
+                successMessage.textContent = 'Сообщение успешно отправлено. Спасибо за ваш интерес.';
+                
+                // Remove any existing messages
+                const existingMessages = contactForm.parentNode.querySelectorAll('.success-message, .error-message');
+                existingMessages.forEach(msg => msg.remove());
+                
+                // Add after form (not inside it)
+                contactForm.parentNode.insertBefore(successMessage, contactForm.nextSibling);
+                
+                // Reset form
+                contactForm.reset();
+                
+                // Remove success message after 10 seconds
+                setTimeout(() => {
+                    successMessage.classList.remove('show');
+                    setTimeout(() => {
+                        successMessage.remove();
+                    }, 300);
+                }, 10000);
+            } else {
+                throw new Error('Form submission failed');
+            }
+        })
+        .catch(error => {
+            // Create error message
+            const errorMessage = document.createElement('div');
+            errorMessage.className = 'error-message show';
+            errorMessage.innerHTML = 'Ошибка отправки. Попробуйте еще раз или напишите на <a href="mailto:anna.sebedash@gmail.com">anna.sebedash@gmail.com</a>';
+            
+            // Remove any existing messages
+            const existingMessages = contactForm.parentNode.querySelectorAll('.success-message, .error-message');
+            existingMessages.forEach(msg => msg.remove());
+            
+            // Add after form (not inside it)
+            contactForm.parentNode.insertBefore(errorMessage, contactForm.nextSibling);
+            
+            // Remove error message after 10 seconds
+            setTimeout(() => {
+                errorMessage.classList.remove('show');
+                setTimeout(() => {
+                    errorMessage.remove();
+                }, 300);
+            }, 10000);
+            
+            console.error('Form submission error:', error);
+        })
+        .finally(() => {
+            // Remove submitting class from form
+            contactForm.classList.remove('submitting');
+            
+            // Re-enable button
+            submitButton.disabled = false;
+            submitButton.textContent = originalButtonText;
         });
-        */
     });
 }
 
@@ -111,7 +147,7 @@ window.addEventListener('scroll', () => {
             document.querySelectorAll('.nav-menu a').forEach(link => {
                 link.style.color = '';
             });
-            navLink.style.color = 'var(--primary-color)';
+            navLink.style.color = '#1e293b';
         }
     });
 });
